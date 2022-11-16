@@ -4,14 +4,14 @@ import userRoutes from "./routes/users.js";
 import postRoutes from "./routes/posts.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import corsOptions from "./config/corsOptions.js";
+
 const app = express();
 
-// app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(cors({ credentials: true }));
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 app.use("/api/posts", postRoutes);
 
