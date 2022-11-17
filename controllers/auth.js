@@ -45,12 +45,13 @@ export const login = (req, res) => {
     const token = jwt.sign({ id: data[0].id }, "jwtkey");
     const { password, ...other } = data[0];
 
-    res
-      .cookie("access_token", token, {
-        httpOnly: true,
-      })
-      .status(200)
-      .json(other);
+    // res
+    //   .cookie("access_token", token, {
+    //     httpOnly: true,
+    //   })
+    //   .status(200)
+    //   .json(other);
+    res.json({ ...other,token });
   });
 };
 
@@ -63,4 +64,3 @@ export const logout = (req, res) => {
     .status(200)
     .json("User has been logged out.");
 };
-
