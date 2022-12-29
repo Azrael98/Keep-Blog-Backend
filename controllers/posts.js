@@ -1,68 +1,83 @@
-import { db } from "../db.js";
-import jwt from "jsonwebtoken";
+import { json } from "express";
+import PostModel from "../models/PostModel.js";
+import UserModel from "../models/UserModel.js";
 
-export const getPosts = (req, res) => {
-  const q = req.query.cat
-    ? "SELECT * FROM posts WHERE cat=?"
-    : "SELECT * FROM posts";
+export const getPosts = async (req, res) => {
 
-  db.query(q, [req.query.cat], (err, data) => {
-    if (err) return res.status(500).send(err);
-
-    return res.status(200).json(data);
-  });
+  try {
+    const query = req.query.cat;
+    const posts = req.query.cat ? await PostModel.find({ cat: query }) : await PostModel.find();
+    res.status(200).json(posts)
+  } catch (error) {
+    res.status(500).json(error);
+  }
 };
 
-export const getPost = (req, res) => {
-  const q =
-    "SELECT p.id, `username`, `title`, `desc`, p.img, u.img AS userImg, `cat`,`date` FROM sql12576448.users u JOIN sql12576448.posts p ON u.id=p.uid WHERE p.id=?";
+export const getPost = async (req, res) => {
 
-  db.query(q, [req.params.id], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.status(200).json(data[0]);
-  });
+  try {
+    const id = req.params.id
+
+    const data = await PostModel.findById(id);
+    const userId = data.uid;
+    let userdata = await UserModel.findById(userId).select("-password")
+    const post = data._doc;
+    const { _id, ...user } = userdata._doc;
+
+    res.status(200).json({ ...post, ...user })
+  } catch (error) {
+    res.status(500).json("yaha pe hai")
+  }
 };
 
-export const addPost = (req, res) => {
-  const q =
-    "INSERT INTO posts(`title`, `desc`, `img`, `cat`, `date`,`uid`) VALUES (?)";
+export const addPost = async (req, res) => {
+  try {
+    const { title, desc, img, cat } = req.body;
+    const uid = req.user.id
+    const post = new PostModel({ title, desc, img, uid, cat });
+    const result = await post.save();
+    res.status(200).json("Post Uploaded")
 
-  const values = [
-    req.body.title,
-    req.body.desc,
-    req.body.img,
-    req.body.cat,
-    req.body.date,
-    req.user.id,
-  ];
+  } catch (error) {
+    res.status(500).json(error)
+  }
 
-  db.query(q, [values], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.json("Post has been created.");
-  });
 };
 
-export const deletePost = (req, res) => {
-  console.log("Delete Post Called");
+export const deletePost = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const uid = req.user.id;
+    let getPost = await PostModel.findById(id)
+    if (!getPost)
+      return res.status(404).json("Post not found");
+    if (getPost.uid.toString() !== uid) {
+      return res.status(403).json("You can delete only your post");
+    }
+
+    getPost = await PostModel.findByIdAndDelete(id);
+    res.status(200).json("Post Delete Successfully")
+
+
+
+  } catch (error) {
+    res.status(500).json(error)
+  }
+
+};
+
+export const updatePost = async (req, res) => {
   const postId = req.params.id;
-  const q = "DELETE FROM posts WHERE `id` = ? AND `uid` = ?";
+  const uid = req.user.id
+  try {
+    const post = await PostModel.findById(postId);
+    if (post.uid.toString() !== uid) return res.status(403).json("You can only update your posts");
+    const { title, desc, img, cat } = req.body;
+    const updatePost = await PostModel.findByIdAndUpdate(postId, { title, desc, img, cat });
+    res.status(200).json("post updted successfully")
+  } catch (error) {
+    res.status(500), json(error)
+  }
 
-  db.query(q, [postId, req.user.id], (err, data) => {
-    if (err) return res.status(403).json("You can delete only your post!");
 
-    return res.json("Post has been deleted!");
-  });
-};
-
-export const updatePost = (req, res) => {
-  const postId = req.params.id;
-  const q =
-    "UPDATE posts SET `title`=?,`desc`=?,`img`=?,`cat`=? WHERE `id` = ? AND `uid` = ?";
-
-  const values = [req.body.title, req.body.desc, req.body.img, req.body.cat];
-
-  db.query(q, [...values, postId, req.user.id], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.json("Post has been updated.");
-  });
 };

@@ -4,7 +4,13 @@ import userRoutes from "./routes/users.js";
 import postRoutes from "./routes/posts.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import mongoose,{ connect } from "mongoose";
+// import connectToMongo from "./db.js";
+import dotenv from "dotenv";
 
+
+dotenv.config();
+const PORT = process.env.PORT;
 const app = express();
 
 app.use(cors({ credentials: true }));
@@ -18,6 +24,12 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/users", userRoutes);
 
-app.listen(8000, () => {
-  console.log("Connected to Backend PORT 8000");
-});
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    app.listen(PORT, () => console.log(`Server Running on PORT ${PORT}`));
+  })
+  .catch((err) => console.log(err));
