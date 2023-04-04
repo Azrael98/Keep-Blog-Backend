@@ -9,6 +9,8 @@ import { verifyUser } from "../middleware/verifyUser.js";
 
 const router = express.Router();
 
+//Comment Routes
+
 router.get("/:id", getComment);
 router.post("/", verifyUser, addComment);
 router.delete("/:id", verifyUser, deleteComment);
