@@ -1,58 +1,53 @@
 // // import { db } from "../db.js";
 // import bcrypt from "bcryptjs";
 // import jwt from "jsonwebtoken";
-// import UserModel from "../models/UserModel.js";
+import PostModel from "../models/PostModel.js";
+import UserModel from "../models/UserModel.js";
+import CommentModel from "../models/CommentModel.js";
 
-// export const getUser = (req, res) => {
-//   const token = req.cookies.access_token;
-//   if (!token) return res.status(401).json("Not authenticated!");
-//   jwt.verify(token, "jwtkey", (err, userInfo) => {
-//     if (err) return res.status(403).json("Not Aunthenticated");
+export const userPosts = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const posts = await PostModel.find({ uid });
+    if (posts.length < 1)
+      return res.status(404).json("You have not posted anything yet.");
+    return res.status(200).json(posts);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
 
-//     const q = "SELECT * from users WHERE `id` = ?";
-//     const userId = userInfo.id;
+export const getUserDetails = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const user = await UserModel.find({ _id: uid }).select("-password");
+    return res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
 
-//     db.query(q, [userId], (err, data) => {
-//       if (err) return res.status(403).json(err);
+export const getComments = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const comments = await CommentModel.find({ uid });
+    if (comments.length < 1)
+      return res.status(404).json("You have not commented on any posts yet.");
+    return res.status(200).json(comments);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
 
-//       console.log(data[0]);
-
-//       return res.status(200).json(data[0]);
-//     });
-//   });
-// };
-
-// export const updateUser = (req, res) => {
-//   console.log("Method Called")
-//   const token = req.cookies.access_token;
-//   if (!token) return res.status(401).json("Not authenticated!");
-
-//   jwt.verify(token, "jwtkey", (err, userInfo) => {
-//     if (err) return res.status(403).json("Token is not valid!");
-
-//     const query = "SELECT * from users WHERE `username`=? OR `email`=?";
-
-//     const userId = userInfo.id;
+export const allDetails = async (req, res) => {
+  try {
+    const uid = req.user.id;
+    const user = await UserModel.find({ _id: uid }).select("-password");
+    const posts = await PostModel.find({ uid });
+    const comments = await CommentModel.find({ uid });
+    return res.status(200).json({profile:user[0],posts, comments})
     
-
-//     db.query(query, [req.body.username, req.body.email], (err, data) => {
-//       if (err) return res.status(403).json(err);
-
-//       if (data.length) return res.status(500).json("User already exists");
-//       console.log(userInfo.id);
-
-//       // Hash the password and create a user
-//       const salt = bcrypt.genSaltSync(10);
-//       const hash = bcrypt.hashSync(req.body.password, salt);
-//       const q =
-//         "UPDATE users SET `username`=?,`email`=?,`password`=? WHERE `id` = ?";
-
-//       const values = [req.body.username, req.body.email, hash, userId];
-
-//       db.query(q, [...values], (err, data) => {
-//         if (err) return res.status(500).json(err);
-//         return res.json("user has been updated.");
-//       });
-//     });
-//   });
-// };
+  } catch (error) {
+    return res.status(500).json(error)
+  }
+};
