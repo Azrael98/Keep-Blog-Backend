@@ -66,7 +66,7 @@ export const updatePost = async (req, res) => {
     if (post.uid.toString() !== uid)
       return res.status(403).json("You can only update your posts");
     const { title, desc, img, cat } = req.body;
-    const updatePost = await PostModel.findByIdAndUpdate(postId, {
+     await PostModel.findByIdAndUpdate(postId, {
       title,
       desc,
       img,

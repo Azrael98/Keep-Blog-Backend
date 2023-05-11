@@ -24,13 +24,18 @@ export const register = async (req, res) => {
 
 };
 
+export const getAll = async(req, res) => {
+  const users = await UserModel.find()
+  return res.status(200).json(users)
+}
+
 export const login = async (req, res) => {
 
   const { username, password } = req.body;
 
   try {
     const user = await UserModel.findOne({ username: username });
-
+  
     if (user) {
       const validity = await bcrypt.compare(password, user.password);
 

@@ -1,6 +1,4 @@
-// // import { db } from "../db.js";
-// import bcrypt from "bcryptjs";
-// import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import PostModel from "../models/PostModel.js";
 import UserModel from "../models/UserModel.js";
 import CommentModel from "../models/CommentModel.js";
@@ -45,9 +43,43 @@ export const allDetails = async (req, res) => {
     const user = await UserModel.find({ _id: uid }).select("-password");
     const posts = await PostModel.find({ uid });
     const comments = await CommentModel.find({ uid });
-    return res.status(200).json({profile:user[0],posts, comments})
-    
+    return res.status(200).json({ profile: user[0], posts, comments });
   } catch (error) {
-    return res.status(500).json(error)
+    return res.status(500).json(error);
+  }
+};
+
+export const editUser = async (req, res) => {
+  try {
+    const { username, email } = req.body.userData;
+    const user = await UserModel.findByIdAndUpdate(req.user.id, {
+      username,
+      email,
+    });
+    return res.status(200).json(user);
+  } catch (error) {
+    return res.status(500).json(error);
+  }
+};
+
+export const changePassword = async (req, res) => {
+  try {
+    const uid = req.user.id;
+
+    const { oldPass, newPass } = req.body;
+
+    const user = await UserModel.findOne({ _id: uid });
+
+    const validity = await bcrypt.compare(oldPass, user.password);
+
+    if (!validity) return res.status(403).json("Incorrect Password");
+
+    const salt = bcrypt.genSaltSync(10);
+    const hash = bcrypt.hashSync(newPass, salt);
+
+    await UserModel.findByIdAndUpdate({ _id: uid }, { password: hash });
+    return res.status(200).json("Password Updated Successfully");
+  } catch (error) {
+    return res.status(500).json(error);
   }
 };
