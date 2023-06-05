@@ -41,18 +41,20 @@ export const login = (req, res) => {
 
     if (!isPasswordCorrect)
       return res.status(400).json("Wrong username or password!");
-
-    const token = jwt.sign({ id: data[0].id }, "jwtkey");
+   
+    const user = data[0];
+    const token = jwt.sign(
+      { username: user.username, id: user._id },
+      process.env.JWTKEY,
+      { expiresIn: "1h" }
+    );
     const { password, ...other } = data[0];
-
-    // res
-    //   .cookie("access_token", token, {
-    //     httpOnly: true,
-    //   })
-    //   .status(200)
-    //   .json(other);
-    res.json({ ...other,token });
+    res.json({ user: other, token: token });
   });
+};
+
+export const checkUser = async (req, res) => {
+  return res.status(200).json(req.user);
 };
 
 export const logout = (req, res) => {

@@ -1,5 +1,5 @@
 import { db } from "../db.js";
-import jwt from "jsonwebtoken";
+import moment from "moment";
 
 export const getPosts = (req, res) => {
   const q = req.query.cat
@@ -15,7 +15,7 @@ export const getPosts = (req, res) => {
 
 export const getPost = (req, res) => {
   const q =
-    "SELECT p.id, `username`, `title`, `desc`, p.img, u.img AS userImg, `cat`,`date` FROM blogs.users u JOIN blogs.posts p ON u.id=p.uid WHERE p.id=?";
+    "SELECT p._id, u.username, p.uid, u.email, p.title, p.desc, p.img, p.cat,p.createdAt, p.updatedAt FROM blogs.users u JOIN blogs.posts p ON u._id=p.uid WHERE p._id=?";
 
   db.query(q, [req.params.id], (err, data) => {
     if (err) return res.status(500).json(err);
@@ -25,14 +25,15 @@ export const getPost = (req, res) => {
 
 export const addPost = (req, res) => {
   const q =
-    "INSERT INTO posts(`title`, `desc`, `img`, `cat`, `date`,`uid`) VALUES (?)";
+    "INSERT INTO posts(`title`, `desc`, `img`, `cat`, `createdAt`, `updatedAt`, `uid`) VALUES (?)";
 
   const values = [
     req.body.title,
     req.body.desc,
     req.body.img,
     req.body.cat,
-    req.body.date,
+    moment().format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+    moment().format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
     req.user.id,
   ];
 
@@ -43,9 +44,8 @@ export const addPost = (req, res) => {
 };
 
 export const deletePost = (req, res) => {
-  console.log("Delete Post Called");
   const postId = req.params.id;
-  const q = "DELETE FROM posts WHERE `id` = ? AND `uid` = ?";
+  const q = "DELETE FROM posts WHERE `_id` = ? AND `uid` = ?";
 
   db.query(q, [postId, req.user.id], (err, data) => {
     if (err) return res.status(403).json("You can delete only your post!");
@@ -55,14 +55,28 @@ export const deletePost = (req, res) => {
 };
 
 export const updatePost = (req, res) => {
-  const postId = req.params.id;
-  const q =
-    "UPDATE posts SET `title`=?,`desc`=?,`img`=?,`cat`=? WHERE `id` = ? AND `uid` = ?";
+  console.log("getting here");
+  try {
+    const postId = req.params.id;
+    const q =
+      "UPDATE posts SET `title`=?,`desc`=?,`img`=?,`cat`=?, `updatedAt` = ? WHERE `_id` = ? AND `uid` = ?";
 
-  const values = [req.body.title, req.body.desc, req.body.img, req.body.cat];
+    const values = [req.body.title, req.body.desc, req.body.img, req.body.cat];
 
-  db.query(q, [...values, postId, req.user.id], (err, data) => {
-    if (err) return res.status(500).json(err);
-    return res.json("Post has been updated.");
-  });
+    db.query(
+      q,
+      [
+        ...values,
+        moment().format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+        postId,
+        req.user.id,
+      ],
+      (err, data) => {
+        if (err) return res.status(500).json(err);
+        return res.json("Post has been updated.");
+      }
+    );
+  } catch (error) {
+    return res.status(500).json(err);
+  }
 };

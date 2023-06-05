@@ -1,31 +1,55 @@
 import { db } from "../db.js";
+import moment from "moment";
 export const addComment = async (req, res) => {
   try {
     const uid = parseInt(req.user.id);
-    const { pid, comment, date } = req.body;
+    const { pid, comment } = req.body;
     const q =
-      "INSERT INTO comments(`comment`, `uid`, `pid`, `date`) VALUES (?)";
+      "INSERT INTO comments(`comment`, `uid`, `pid`, `createdAt`, `updatedAt`) VALUES (?)";
 
-    const values = [comment, uid, pid, date];
+    console.log("Getting herer");
+    const values = [
+      comment,
+      uid,
+      pid,
+      moment().format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+      moment().format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+    ];
 
     db.query(q, [values], (err, data) => {
       if (err) return res.status(500).json(err);
-      return res.json("Comment Added.");
+      return res.status(200).json("Comment Added.");
     });
   } catch (error) {
-    return res.send(401).json({ msg: "Unauthorized" });
+    return res.status(401).json({ msg: "Unauthorized" });
   }
 };
 
 export const getComments = async (req, res) => {
   try {
     const qu =
-      "SELECT c.id, c.uid, c.comment, c.date, u.username FROM blogs.comments c JOIN blogs.users u ON c.uid=u.id WHERE c.pid=?";
+      "SELECT c._id, c.uid, c.comment, c.createdAt, c.updatedAt, u.username, u.email, u.img FROM blogs.comments c JOIN blogs.users u ON c.uid=u._id WHERE c.pid=?";
     const values = [req.params.id];
     db.query(qu, values, (err, data) => {
       if (err) return res.status(500).send(err);
 
-      return res.status(200).json(data);
+      const comment = data.map(item=>{
+        const obj = {
+            _id:item._id,
+            comment:item.comment,
+            pid:req.params.id,
+            createdAt:item.createdAt,
+            updatedAt:item.updatedAt,
+            uid:{
+              _id:item.uid,
+              username:item.username,
+              email:item.email
+            }
+          }
+          return obj;
+      })
+    
+      return res.status(200).json(comment);
     });
   } catch (error) {}
 };
@@ -33,7 +57,7 @@ export const getComments = async (req, res) => {
 export const deleteComment = async (req, res) => {
   try {
     const id = req.params.id;
-    const q = "DELETE from comments where id = ?";
+    const q = "DELETE from comments where _id = ?";
     db.query(q, [id], (err, data) => {
       if (err) return res.status(500).send(err);
 
